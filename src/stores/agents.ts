@@ -8,6 +8,7 @@ export interface Agent {
   profile: string
   system_prompt: string
   skills: string[]
+  enabled?: boolean
 }
 
 export interface AgentInput {
