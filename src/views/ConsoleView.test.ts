@@ -92,16 +92,33 @@ describe('ConsoleView', () => {
     wrapper.unmount()
   })
 
-  it('sends a chat JSON message for the selected agent and shows the user message locally', async () => {
+  it('sends a chat JSON message for the selected agent and renders the server user echo', async () => {
     const wrapper = mount(ConsoleView)
     await flushPromises()
 
     await wrapper.find('input').setValue('hello world')
     await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
 
     expect(mocks.send).toHaveBeenCalledTimes(1)
     const sent = JSON.parse(mocks.send.mock.calls[0][0] as string) as Record<string, unknown>
     expect(sent).toEqual({ type: 'chat', agent_id: 'a1', content: 'hello world' })
+
+    // The UI must not echo the user message locally (that would duplicate it
+    // once the server broadcast arrives).
+    expect(wrapper.text()).not.toContain('hello world')
+
+    // The server echoes the user turn back; the UI renders it once.
+    const instance = mocks.state.instance
+    instance?.onMessage?.(
+      JSON.stringify({
+        type: 'agent_message',
+        tenant: 't1',
+        payload: { role: 'user', content: 'hello world', agent_id: 'a1' },
+        time: '2026-08-28T00:00:00.000Z',
+      }),
+    )
+    await flushPromises()
 
     expect(wrapper.text()).toContain('hello world')
 

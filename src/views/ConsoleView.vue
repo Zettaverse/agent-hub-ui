@@ -88,8 +88,8 @@ function send(): void {
   const text = draft.value.trim()
   if (!text || selectedAgentId.value === '' || pending.value) return
 
-  messages.value = [...messages.value, { id: crypto.randomUUID(), role: 'user', content: text, time: new Date().toISOString() }]
-
+  // Do NOT append the user message locally: the server echoes the turn back
+  // via broadcast, and rendering it here as well would duplicate it.
   client?.send(
     JSON.stringify({
       type: 'chat',
