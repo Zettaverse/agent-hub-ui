@@ -28,7 +28,7 @@ const isCondition = computed(() => props.type === 'condition')
 const summary = computed(() => {
   switch (props.type) {
     case 'trigger':
-      return String(props.data.kind ?? 'manual')
+      return String(props.data.trigger_type ?? 'manual')
     case 'agent':
       return String(props.data.agent_id ?? 'no agent selected')
     case 'mcp_tool':
@@ -36,7 +36,7 @@ const summary = computed(() => {
     case 'condition':
       return String(props.data.expression ?? '')
     case 'output':
-      return String(props.data.kind ?? '')
+      return props.data.target ? `${String(props.data.kind ?? '')} → ${String(props.data.target)}` : String(props.data.kind ?? '')
     default:
       return ''
   }

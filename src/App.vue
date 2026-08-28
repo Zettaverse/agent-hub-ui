@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
@@ -15,6 +18,11 @@ const navItems = [
 function isActive(to: string): boolean {
   if (to === '/') return route.path === '/'
   return route.path === to || route.path.startsWith(`${to}/`)
+}
+
+function logout(): void {
+  auth.logout()
+  void router.push('/login')
 }
 </script>
 
@@ -33,6 +41,12 @@ function isActive(to: string): boolean {
           {{ item.label }}
         </RouterLink>
       </nav>
+      <button
+        class="mt-6 w-full rounded border border-slate-700 px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white"
+        @click="logout"
+      >
+        Sign out
+      </button>
     </aside>
     <main class="min-w-0 flex-1 overflow-auto">
       <RouterView />

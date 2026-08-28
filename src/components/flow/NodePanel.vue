@@ -17,14 +17,12 @@ const emit = defineEmits<{
 const data = computed<Record<string, unknown>>(() => props.node?.data ?? {})
 
 const argumentsText = ref('')
-const configText = ref('')
 const jsonError = ref<string | null>(null)
 
 watch(
   () => props.node?.id,
   () => {
     argumentsText.value = JSON.stringify(data.value.arguments ?? {}, null, 2)
-    configText.value = JSON.stringify(data.value.config ?? {}, null, 2)
     jsonError.value = null
   },
   { immediate: true },
@@ -35,9 +33,8 @@ function emitScalar(field: string, event: Event): void {
   emit('update-data', field, target.value)
 }
 
-function emitJson(field: 'arguments' | 'config', text: string): void {
-  if (field === 'arguments') argumentsText.value = text
-  else configText.value = text
+function emitJson(field: string, text: string): void {
+  argumentsText.value = text
   try {
     const parsed: unknown = JSON.parse(text)
     jsonError.value = null
@@ -58,13 +55,24 @@ function emitJson(field: 'arguments' | 'config', text: string): void {
         <span class="truncate text-xs text-slate-500">{{ node.id }}</span>
       </div>
 
-      <div v-if="node.type === 'trigger'" class="mb-4">
-        <label class="mb-1 block text-xs text-slate-400">Kind</label>
-        <input
-          :value="String(data.kind ?? '')"
-          class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
-          @input="emitScalar('kind', $event)"
-        />
+      <div v-if="node.type === 'trigger'" class="mb-4 space-y-4">
+        <div>
+          <label class="mb-1 block text-xs text-slate-400">Kind</label>
+          <input
+            :value="String(data.trigger_type ?? 'manual')"
+            class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
+            @input="emitScalar('trigger_type', $event)"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs text-slate-400">Value (input passed to the next node)</label>
+          <textarea
+            :value="String(data.value ?? '')"
+            class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 font-mono text-xs text-white"
+            rows="4"
+            @input="emitScalar('value', $event)"
+          />
+        </div>
       </div>
 
       <div v-else-if="node.type === 'agent'" class="mb-4">
@@ -123,12 +131,19 @@ function emitJson(field: 'arguments' | 'config', text: string): void {
           />
         </div>
         <div>
-          <label class="mb-1 block text-xs text-slate-400">Config (JSON)</label>
-          <textarea
-            :value="configText"
-            class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 font-mono text-xs text-white"
-            rows="6"
-            @input="emitJson('config', ($event.target as HTMLTextAreaElement).value)"
+          <label class="mb-1 block text-xs text-slate-400">Target</label>
+          <input
+            :value="String(data.target ?? '')"
+            class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
+            @input="emitScalar('target', $event)"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs text-slate-400">Value</label>
+          <input
+            :value="String(data.value ?? '')"
+            class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
+            @input="emitScalar('value', $event)"
           />
         </div>
       </div>

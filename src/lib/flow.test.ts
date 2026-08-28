@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  FLOW_VERSION,
   NODE_TYPES,
   createEmptyFlow,
   defaultNodeData,
@@ -13,71 +12,48 @@ import {
 } from '@/lib/flow'
 
 function trigger(id: string, x = 0): FlowNode {
-  return { id, type: 'trigger', position: { x, y: 0 }, data: { kind: 'manual' } }
+  return { id, type: 'trigger', position: { x, y: 0 }, trigger_type: 'manual', value: 'hello' }
 }
 
 function agent(id: string, x = 0): FlowNode {
-  return { id, type: 'agent', position: { x, y: 0 }, data: { agent_id: 'a1' } }
+  return { id, type: 'agent', position: { x, y: 0 }, agent_id: 'a1' }
 }
 
 function condition(id: string, x = 0): FlowNode {
-  return { id, type: 'condition', position: { x, y: 0 }, data: { expression: 'true' } }
+  return { id, type: 'condition', position: { x, y: 0 }, expression: 'true' }
 }
 
 function output(id: string, x = 0): FlowNode {
-  return { id, type: 'output', position: { x, y: 0 }, data: { kind: 'database', config: {} } }
+  return { id, type: 'output', position: { x, y: 0 }, kind: 'database', target: 'hub' }
 }
 
-function edge(id: string, source: string, target: string, sourceHandle = 'out'): Flow['edges'][number] {
-  return { id, source, source_handle: sourceHandle, target, target_handle: 'in' }
-}
-
-const schemaFlow: Flow = {
-  version: 1,
-  id: 'flow-uuid',
-  name: 'My flow',
-  nodes: [
-    { id: 'n1', type: 'trigger', position: { x: 0, y: 0 }, data: { kind: 'manual' } },
-    { id: 'n2', type: 'agent', position: { x: 100, y: 0 }, data: { agent_id: 'a1' } },
-    {
-      id: 'n3',
-      type: 'mcp_tool',
-      position: { x: 200, y: 0 },
-      data: { server_id: 's1', tool: 'query_db', arguments: { q: '...' } },
-    },
-    { id: 'n4', type: 'condition', position: { x: 300, y: 0 }, data: { expression: 'result.rows.length > 0' } },
-    { id: 'n5', type: 'output', position: { x: 400, y: 0 }, data: { kind: 'database', config: { table: 'logs' } } },
-  ],
-  edges: [
-    { id: 'e1', source: 'n1', source_handle: 'out', target: 'n2', target_handle: 'in' },
-    { id: 'e2', source: 'n2', source_handle: 'out', target: 'n3', target_handle: 'in' },
-    { id: 'e3', source: 'n3', source_handle: 'out', target: 'n4', target_handle: 'in' },
-    { id: 'e4', source: 'n4', source_handle: 'true', target: 'n5', target_handle: 'in' },
-    { id: 'e5', source: 'n4', source_handle: 'false', target: 'n2', target_handle: 'in' },
-  ],
-  permissions: { resources: ['modbus://*'], files: ['/data/*'], databases: ['hub'] },
+function edge(id: string, source: string, target: string, sourceHandle?: string): Flow['flow_json']['edges'][number] {
+  return { id, source, target, ...(sourceHandle ? { source_handle: sourceHandle } : {}) }
 }
 
 const validFlow: Flow = {
-  version: 1,
   id: 'valid-flow',
   name: 'Valid flow',
-  nodes: [
-    trigger('n1', 0),
-    agent('n2', 100),
-    { id: 'n3', type: 'mcp_tool', position: { x: 200, y: 0 }, data: { server_id: 's1', tool: 't', arguments: {} } },
-    condition('n4', 300),
-    output('n5', 400),
-    output('n6', 400),
-  ],
-  edges: [
-    edge('e1', 'n1', 'n2'),
-    edge('e2', 'n2', 'n3'),
-    edge('e3', 'n3', 'n4'),
-    edge('e4', 'n4', 'n5', 'true'),
-    edge('e5', 'n4', 'n6', 'false'),
-  ],
+  flow_json: {
+    name: 'Valid flow',
+    nodes: [
+      trigger('n1', 0),
+      agent('n2', 100),
+      { id: 'n3', type: 'mcp_tool', position: { x: 200, y: 0 }, server_id: 's1', tool: 't', arguments: {} },
+      condition('n4', 300),
+      output('n5', 400),
+      output('n6', 400),
+    ],
+    edges: [
+      edge('e1', 'n1', 'n2'),
+      edge('e2', 'n2', 'n3'),
+      edge('e3', 'n3', 'n4'),
+      edge('e4', 'n4', 'n5', 'true'),
+      edge('e5', 'n4', 'n6', 'false'),
+    ],
+  },
   permissions: { resources: [], files: [], databases: [] },
+  enabled: true,
 }
 
 describe('validateFlow', () => {
@@ -86,26 +62,42 @@ describe('validateFlow', () => {
   })
 
   it('rejects a flow with no trigger', () => {
-    const flow: Flow = { ...validFlow, nodes: validFlow.nodes.filter((n) => n.type !== 'trigger') }
+    const flow: Flow = {
+      ...validFlow,
+      flow_json: { ...validFlow.flow_json, nodes: validFlow.flow_json.nodes.filter((n) => n.type !== 'trigger') },
+    }
     const errors = validateFlow(flow)
     expect(errors.some((e) => e.includes('trigger'))).toBe(true)
   })
 
   it('rejects a flow with multiple triggers', () => {
-    const flow: Flow = { ...validFlow, nodes: [...validFlow.nodes, trigger('n7', 500)] }
+    const flow: Flow = {
+      ...validFlow,
+      flow_json: { ...validFlow.flow_json, nodes: [...validFlow.flow_json.nodes, trigger('n7', 500)] },
+    }
     const errors = validateFlow(flow)
     expect(errors.some((e) => e.includes('exactly one trigger'))).toBe(true)
   })
 
-  it('rejects a flow with a cycle (schema example has an n4 -> n2 back edge)', () => {
-    const errors = validateFlow(schemaFlow)
+  it('rejects a flow with a cycle', () => {
+    const flow: Flow = {
+      ...validFlow,
+      flow_json: {
+        ...validFlow.flow_json,
+        edges: [...validFlow.flow_json.edges, edge('e6', 'n5', 'n1')],
+      },
+    }
+    const errors = validateFlow(flow)
     expect(errors).toContain('Flow contains a cycle.')
   })
 
   it('rejects dangling edges referencing missing nodes', () => {
     const flow: Flow = {
       ...validFlow,
-      edges: [...validFlow.edges, edge('eX', 'n5', 'missing')],
+      flow_json: {
+        ...validFlow.flow_json,
+        edges: [...validFlow.flow_json.edges, edge('eX', 'n5', 'missing')],
+      },
     }
     const errors = validateFlow(flow)
     expect(errors.some((e) => e.includes('missing target node "missing"'))).toBe(true)
@@ -114,7 +106,10 @@ describe('validateFlow', () => {
   it('rejects edges whose source node is missing', () => {
     const flow: Flow = {
       ...validFlow,
-      edges: [...validFlow.edges, edge('eY', 'ghost', 'n5')],
+      flow_json: {
+        ...validFlow.flow_json,
+        edges: [...validFlow.flow_json.edges, edge('eY', 'ghost', 'n5')],
+      },
     }
     const errors = validateFlow(flow)
     expect(errors.some((e) => e.includes('missing source node "ghost"'))).toBe(true)
@@ -123,72 +118,64 @@ describe('validateFlow', () => {
   it('rejects unknown node types', () => {
     const flow: Flow = {
       ...validFlow,
-      nodes: [...validFlow.nodes, { id: 'bad', type: 'banana', position: { x: 0, y: 0 }, data: {} } as unknown as FlowNode],
+      flow_json: {
+        ...validFlow.flow_json,
+        nodes: [...validFlow.flow_json.nodes, { id: 'bad', type: 'banana', position: { x: 0, y: 0 } } as unknown as FlowNode],
+      },
     }
     const errors = validateFlow(flow)
     expect(errors.some((e) => e.includes('Unknown node type "banana"'))).toBe(true)
   })
 
   it('rejects duplicate node ids', () => {
-    const flow: Flow = { ...validFlow, nodes: [...validFlow.nodes, trigger('n1', 500)] }
+    const flow: Flow = {
+      ...validFlow,
+      flow_json: { ...validFlow.flow_json, nodes: [...validFlow.flow_json.nodes, trigger('n1', 500)] },
+    }
     const errors = validateFlow(flow)
     expect(errors.some((e) => e.includes('Duplicate node id "n1"'))).toBe(true)
   })
 
   it('rejects duplicate edge ids', () => {
-    const flow: Flow = { ...validFlow, edges: [...validFlow.edges, edge('e1', 'n2', 'n5')] }
+    const flow: Flow = {
+      ...validFlow,
+      flow_json: { ...validFlow.flow_json, edges: [...validFlow.flow_json.edges, edge('e1', 'n2', 'n5')] },
+    }
     const errors = validateFlow(flow)
     expect(errors.some((e) => e.includes('Duplicate edge id "e1"'))).toBe(true)
   })
 })
 
 describe('flowToNodesEdges / nodesEdgesToFlow', () => {
-  it('round-trips the schema flow exactly', () => {
-    const { nodes, edges } = flowToNodesEdges(schemaFlow)
-    const result = nodesEdgesToFlow(nodes, edges, {
-      id: schemaFlow.id,
-      name: schemaFlow.name,
-      permissions: schemaFlow.permissions,
-    })
-    expect(result).toEqual(schemaFlow)
-  })
-
   it('round-trips the valid flow exactly', () => {
     const { nodes, edges } = flowToNodesEdges(validFlow)
     const result = nodesEdgesToFlow(nodes, edges, {
       id: validFlow.id,
       name: validFlow.name,
       permissions: validFlow.permissions,
+      enabled: validFlow.enabled,
     })
     expect(result).toEqual(validFlow)
   })
 
-  it('converts snake_case handles to Vue Flow camelCase handles', () => {
-    const { edges } = flowToNodesEdges(schemaFlow)
+  it('maps empty source/target handles to Vue Flow out/in handles', () => {
+    const { edges } = flowToNodesEdges(validFlow)
     expect(edges[0]).toMatchObject({ sourceHandle: 'out', targetHandle: 'in' })
     expect(edges[3]).toMatchObject({ sourceHandle: 'true' })
   })
 
-  it('defaults missing source/target handles', () => {
-    const flow = nodesEdgesToFlow(
-      [{ id: 'a', type: 'trigger', position: { x: 0, y: 0 }, data: { kind: 'manual' } }],
-      [{ id: 'e1', source: 'a', target: 'a' }],
-      { id: 'f', name: 'n' },
-    )
-    expect(flow.edges[0]).toEqual({
-      id: 'e1',
-      source: 'a',
-      source_handle: 'out',
-      target: 'a',
-      target_handle: 'in',
-    })
+  it('drops out/in handles back to empty on serialize', () => {
+    const { nodes, edges } = flowToNodesEdges(validFlow)
+    const result = nodesEdgesToFlow(nodes, edges, { id: 'f', name: 'n' })
+    expect(result.flow_json.edges[0]).toEqual({ id: 'e1', source: 'n1', target: 'n2' })
+    expect(result.flow_json.edges[3]).toEqual({ id: 'e4', source: 'n4', source_handle: 'true', target: 'n5' })
   })
 
-  it('applies default permissions when none are provided', () => {
+  it('applies default permissions and enabled when not provided', () => {
     const { nodes, edges } = flowToNodesEdges(validFlow)
     const flow = nodesEdgesToFlow(nodes, edges, { id: 'f', name: 'n' })
     expect(flow.permissions).toEqual({ resources: [], files: [], databases: [] })
-    expect(flow.version).toBe(FLOW_VERSION)
+    expect(flow.enabled).toBe(true)
   })
 })
 
@@ -199,21 +186,21 @@ describe('helpers', () => {
     expect(isNodeType('')).toBe(false)
   })
 
-  it('defaultNodeData returns a shape for every known type', () => {
-    expect(defaultNodeData('trigger')).toEqual({ kind: 'manual' })
+  it('defaultNodeData returns flat fields for every known type', () => {
+    expect(defaultNodeData('trigger')).toEqual({ trigger_type: 'manual', value: '' })
     expect(defaultNodeData('agent')).toEqual({ agent_id: '' })
     expect(defaultNodeData('mcp_tool')).toEqual({ server_id: '', tool: '', arguments: {} })
     expect(defaultNodeData('condition')).toEqual({ expression: '' })
-    expect(defaultNodeData('output')).toEqual({ kind: 'database', config: {} })
+    expect(defaultNodeData('output')).toEqual({ kind: 'database', target: '', value: '' })
   })
 
   it('createEmptyFlow returns a fresh flow with a uuid id', () => {
     const flow = createEmptyFlow('My new flow')
     expect(flow.id).toMatch(/^[0-9a-f-]{36}$/)
     expect(flow.name).toBe('My new flow')
-    expect(flow.version).toBe(FLOW_VERSION)
-    expect(flow.nodes).toEqual([])
-    expect(flow.edges).toEqual([])
+    expect(flow.flow_json.nodes).toEqual([])
+    expect(flow.flow_json.edges).toEqual([])
     expect(flow.permissions).toEqual({ resources: [], files: [], databases: [] })
+    expect(flow.enabled).toBe(true)
   })
 })

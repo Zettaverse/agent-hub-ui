@@ -23,7 +23,7 @@ function openFlow(id: string): void {
 
 function nodeCount(id: string): number {
   const flow = store.flows.find((existing) => existing.id === id)
-  return flow?.nodes.length ?? 0
+  return flow?.flow_json.nodes.length ?? 0
 }
 </script>
 
