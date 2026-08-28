@@ -1,0 +1,19 @@
+# syntax=docker/dockerfile:1
+
+# ---------------------------------------------------------------------------
+# Static nginx image for the pre-built SPA. `dist/` is produced by the CI
+# release workflow (built once on amd64) and passed as build context, so this
+# image is trivially multi-arch (nginx base is already multi-arch) without
+# re-running npm/vite under QEMU emulation.
+# ---------------------------------------------------------------------------
+FROM nginx:1.27-alpine
+
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY dist /usr/share/nginx/html
+
+ENV BACKEND_HOST=localhost \
+    BACKEND_PORT=8080
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
