@@ -1,0 +1,14 @@
+node_modules
+dist
+coverage
+.git
+.github
+*.log
+.vite
+.idea
+.vscode
+Dockerfile
+.dockerignore
+.gitignore
+README.md
+LICENSE
