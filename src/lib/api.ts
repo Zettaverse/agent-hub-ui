@@ -26,6 +26,15 @@ export function getAuthToken(): string | null {
   return localStorage.getItem(AUTH_TOKEN_KEY)
 }
 
+function redirectToLogin(): void {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem(AUTH_TOKEN_KEY)
+  }
+  if (typeof window !== 'undefined' && typeof window.location.assign === 'function') {
+    window.location.assign('/login')
+  }
+}
+
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 
 function buildClient(fetchFn: FetchLike, baseUrl: string): ApiClient {
@@ -52,6 +61,10 @@ function buildClient(fetchFn: FetchLike, baseUrl: string): ApiClient {
         detail = await response.json()
       } catch {
         detail = undefined
+      }
+      if (response.status === 401 && path !== '/auth/login') {
+        redirectToLogin()
+        throw new ApiError(401, 'Session expired. Redirecting to login.', detail)
       }
       throw new ApiError(response.status, `Request failed: ${response.status} ${response.statusText}`, detail)
     }

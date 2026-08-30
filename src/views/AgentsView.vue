@@ -73,36 +73,36 @@ async function remove(agent: Agent): Promise<void> {
 <template>
   <div class="p-6">
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-semibold text-white">Agents</h1>
+      <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Agents</h1>
       <button
-        class="rounded bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500"
+        class="rounded-xl bg-royal px-4 py-2 text-sm font-medium text-white transition-colors duration-300 hover:bg-royal-hover"
         @click="openCreate"
       >
         New Agent
       </button>
     </div>
 
-    <div v-if="store.loading" class="text-slate-400">Loading…</div>
+    <div v-if="store.loading" class="text-slate-500 dark:text-slate-400">Loading…</div>
 
-    <div v-else-if="store.agents.length === 0" class="text-slate-400">No agents yet.</div>
+    <div v-else-if="store.agents.length === 0" class="text-slate-500 dark:text-slate-400">No agents yet.</div>
 
     <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <div v-for="agent in store.agents" :key="agent.id" class="rounded-lg border border-slate-800 bg-slate-900 p-5">
+      <div v-for="agent in store.agents" :key="agent.id" class="squircle panel p-5">
         <div class="mb-2 flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-white">{{ agent.name }}</h2>
+          <h2 class="text-lg font-semibold text-slate-900 dark:text-white">{{ agent.name }}</h2>
           <div class="flex gap-2">
-            <button class="text-sm text-slate-400 hover:text-white" @click="openEdit(agent)">Edit</button>
-            <button class="text-sm text-rose-400 hover:text-rose-300" @click="remove(agent)">Delete</button>
+            <button class="text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" @click="openEdit(agent)">Edit</button>
+            <button class="text-sm text-rose-500 hover:text-rose-400 dark:text-rose-400 dark:hover:text-rose-300" @click="remove(agent)">Delete</button>
           </div>
         </div>
-        <p class="mb-3 text-sm text-slate-400">{{ agent.profile }}</p>
-        <div class="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">System Prompt</div>
-        <p class="mb-3 text-sm text-slate-300">{{ agent.system_prompt }}</p>
+        <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">{{ agent.profile }}</p>
+        <div class="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">System Prompt</div>
+        <p class="mb-3 text-sm text-slate-700 dark:text-slate-300">{{ agent.system_prompt }}</p>
         <div class="flex flex-wrap gap-1">
           <span
             v-for="skill in agent.skills"
             :key="skill"
-            class="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300"
+            class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300"
           >
             {{ skill }}
           </span>
@@ -111,42 +111,42 @@ async function remove(agent: Agent): Promise<void> {
     </div>
 
     <div v-if="showForm" class="fixed inset-0 z-10 flex items-center justify-center bg-black/50 p-4">
-      <div class="w-full max-w-lg rounded-lg border border-slate-700 bg-slate-900 p-6">
-        <h2 class="mb-4 text-lg font-semibold text-white">
+      <div class="squircle panel w-full max-w-lg p-6">
+        <h2 class="mb-4 text-lg font-semibold text-slate-900 dark:text-white">
           {{ editingId ? 'Edit Agent' : 'New Agent' }}
         </h2>
         <div class="mb-4">
-          <label class="mb-1 block text-sm text-slate-400">Name</label>
-          <input v-model="form.name" class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-white" />
+          <label class="mb-1 block text-sm text-slate-500 dark:text-slate-400">Name</label>
+          <input v-model="form.name" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
         </div>
         <div class="mb-4">
-          <label class="mb-1 block text-sm text-slate-400">Profile</label>
+          <label class="mb-1 block text-sm text-slate-500 dark:text-slate-400">Profile</label>
           <textarea
             v-model="form.profile"
-            class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-white"
+            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             rows="2"
           />
         </div>
         <div class="mb-4">
-          <label class="mb-1 block text-sm text-slate-400">System Prompt</label>
+          <label class="mb-1 block text-sm text-slate-500 dark:text-slate-400">System Prompt</label>
           <textarea
             v-model="form.system_prompt"
-            class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-white"
+            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             rows="4"
           />
         </div>
         <div class="mb-4">
-          <label class="mb-1 block text-sm text-slate-400">Skills (comma separated)</label>
+          <label class="mb-1 block text-sm text-slate-500 dark:text-slate-400">Skills (comma separated)</label>
           <input
             v-model="skillsText"
-            class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-white"
+            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           />
         </div>
         <div class="flex justify-end gap-2">
-          <button class="rounded border border-slate-700 px-4 py-2 text-sm text-slate-300" @click="closeForm">
+          <button class="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 transition-colors duration-300 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" @click="closeForm">
             Cancel
           </button>
-          <button class="rounded bg-sky-600 px-4 py-2 text-sm text-white hover:bg-sky-500" @click="submit">
+          <button class="rounded-xl bg-royal px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-royal-hover" @click="submit">
             Save
           </button>
         </div>

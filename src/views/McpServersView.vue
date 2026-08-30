@@ -80,9 +80,9 @@ async function test(server: McpServer): Promise<void> {
 }
 
 function statusBadgeClass(server: McpServer): string {
-  if (server.status === 'connected') return 'bg-emerald-500/20 text-emerald-300'
-  if (server.status === 'disconnected' || server.status === 'error') return 'bg-rose-500/20 text-rose-300'
-  return 'bg-slate-700/40 text-slate-300'
+  if (server.status === 'connected') return 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+  if (server.status === 'disconnected' || server.status === 'error') return 'bg-rose-500/15 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'
+  return 'bg-slate-200 text-slate-600 dark:bg-slate-700/40 dark:text-slate-300'
 }
 
 function transportLabel(server: McpServer): string {
@@ -100,47 +100,47 @@ function setTransport(transport: McpTransport): void {
 <template>
   <div class="p-6">
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-semibold text-white">MCP Servers</h1>
-      <button class="rounded bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500" @click="openForm">
+      <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">MCP Servers</h1>
+      <button class="rounded-xl bg-royal px-4 py-2 text-sm font-medium text-white transition-colors duration-300 hover:bg-royal-hover" @click="openForm">
         Add Server
       </button>
     </div>
 
-    <div v-if="store.loading" class="text-slate-400">Loading…</div>
-    <div v-else-if="store.servers.length === 0" class="text-slate-400">No MCP servers yet.</div>
+    <div v-if="store.loading" class="text-slate-500 dark:text-slate-400">Loading…</div>
+    <div v-else-if="store.servers.length === 0" class="text-slate-500 dark:text-slate-400">No MCP servers yet.</div>
 
     <div v-else class="flex flex-col gap-3">
       <div
         v-for="server in store.servers"
         :key="server.id"
-        class="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900 p-4"
+        class="squircle panel flex items-center justify-between p-4"
       >
         <div class="min-w-0">
           <div class="flex items-center gap-2">
-            <span class="font-semibold text-white">{{ server.name }}</span>
-            <span class="rounded px-2 py-0.5 text-xs font-medium" :class="statusBadgeClass(server)">
+            <span class="font-semibold text-slate-900 dark:text-white">{{ server.name }}</span>
+            <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="statusBadgeClass(server)">
               {{ server.status ?? 'unknown' }}
             </span>
           </div>
-          <div class="mt-1 truncate text-sm text-slate-400">{{ transportLabel(server) }}</div>
+          <div class="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">{{ transportLabel(server) }}</div>
           <div v-if="testResults[server.id]" class="mt-1 text-xs">
-            <span v-if="testResults[server.id]?.ok" class="text-emerald-300">
+            <span v-if="testResults[server.id]?.ok" class="text-emerald-600 dark:text-emerald-300">
               test ok{{ testResults[server.id]?.message ? `: ${testResults[server.id]?.message}` : '' }}
             </span>
-            <span v-else class="text-rose-300">
+            <span v-else class="text-rose-600 dark:text-rose-300">
               test failed{{ testResults[server.id]?.message ? `: ${testResults[server.id]?.message}` : '' }}
             </span>
           </div>
         </div>
         <div class="flex shrink-0 gap-2">
           <button
-            class="rounded border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+            class="rounded-xl border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition-colors duration-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             :disabled="store.testing[server.id]"
             @click="test(server)"
           >
             {{ store.testing[server.id] ? 'Testing…' : 'Test' }}
           </button>
-          <button class="rounded px-3 py-1.5 text-sm text-rose-400 hover:bg-slate-800" @click="remove(server)">
+          <button class="rounded-xl px-3 py-1.5 text-sm text-rose-500 hover:bg-slate-100 dark:text-rose-400 dark:hover:bg-slate-800" @click="remove(server)">
             Delete
           </button>
         </div>
@@ -148,27 +148,27 @@ function setTransport(transport: McpTransport): void {
     </div>
 
     <div v-if="showForm" class="fixed inset-0 z-10 flex items-center justify-center bg-black/50 p-4">
-      <div class="w-full max-w-lg rounded-lg border border-slate-700 bg-slate-900 p-6">
-        <h2 class="mb-4 text-lg font-semibold text-white">Add MCP Server</h2>
+      <div class="squircle panel w-full max-w-lg p-6">
+        <h2 class="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Add MCP Server</h2>
 
         <div class="mb-4">
-          <label class="mb-1 block text-sm text-slate-400">Name</label>
-          <input v-model="form.name" class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-white" />
+          <label class="mb-1 block text-sm text-slate-500 dark:text-slate-400">Name</label>
+          <input v-model="form.name" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
         </div>
 
         <div class="mb-4">
-          <label class="mb-1 block text-sm text-slate-400">Transport</label>
+          <label class="mb-1 block text-sm text-slate-500 dark:text-slate-400">Transport</label>
           <div class="flex gap-2">
             <button
-              class="rounded border px-3 py-1.5 text-sm"
-              :class="form.transport === 'stdio' ? 'border-sky-500 bg-sky-600/20 text-sky-300' : 'border-slate-700 text-slate-300'"
+              class="rounded-xl border px-3 py-1.5 text-sm transition-colors duration-300"
+              :class="form.transport === 'stdio' ? 'border-sky-500 bg-sky-600/20 text-sky-700 dark:text-sky-300' : 'border-slate-200 bg-white text-slate-600 hover:border-sky-500 hover:bg-sky-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-sky-500 dark:hover:bg-slate-800'"
               @click="setTransport('stdio')"
             >
               stdio
             </button>
             <button
-              class="rounded border px-3 py-1.5 text-sm"
-              :class="form.transport === 'websocket' ? 'border-sky-500 bg-sky-600/20 text-sky-300' : 'border-slate-700 text-slate-300'"
+              class="rounded-xl border px-3 py-1.5 text-sm transition-colors duration-300"
+              :class="form.transport === 'websocket' ? 'border-sky-500 bg-sky-600/20 text-sky-700 dark:text-sky-300' : 'border-slate-200 bg-white text-slate-600 hover:border-sky-500 hover:bg-sky-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-sky-500 dark:hover:bg-slate-800'"
               @click="setTransport('websocket')"
             >
               websocket
@@ -178,31 +178,31 @@ function setTransport(transport: McpTransport): void {
 
         <template v-if="!isWebsocket">
           <div class="mb-4">
-            <label class="mb-1 block text-sm text-slate-400">Command</label>
+            <label class="mb-1 block text-sm text-slate-500 dark:text-slate-400">Command</label>
             <input
               v-model="form.command"
-              class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-white"
+              class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
           <div class="mb-4">
-            <label class="mb-1 block text-sm text-slate-400">Arguments (space separated)</label>
+            <label class="mb-1 block text-sm text-slate-500 dark:text-slate-400">Arguments (space separated)</label>
             <input
               v-model="argsText"
-              class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-white"
+              class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
           </div>
         </template>
 
         <div v-else class="mb-4">
-          <label class="mb-1 block text-sm text-slate-400">WebSocket URL</label>
-          <input v-model="form.url" class="w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-white" />
+          <label class="mb-1 block text-sm text-slate-500 dark:text-slate-400">WebSocket URL</label>
+          <input v-model="form.url" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
         </div>
 
         <div class="flex justify-end gap-2">
-          <button class="rounded border border-slate-700 px-4 py-2 text-sm text-slate-300" @click="closeForm">
+          <button class="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 transition-colors duration-300 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" @click="closeForm">
             Cancel
           </button>
-          <button class="rounded bg-sky-600 px-4 py-2 text-sm text-white hover:bg-sky-500" @click="submit">
+          <button class="rounded-xl bg-royal px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-royal-hover" @click="submit">
             Add
           </button>
         </div>

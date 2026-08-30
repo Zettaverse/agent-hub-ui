@@ -156,22 +156,22 @@ onBeforeUnmount(() => {
 <template>
   <div class="flex h-screen flex-col p-6">
     <div class="mb-4 flex items-center justify-between">
-      <h1 class="text-2xl font-semibold text-white">Live Console</h1>
+      <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Live Console</h1>
       <div class="flex items-center gap-2 text-sm">
         <span
           class="inline-block h-2 w-2 rounded-full"
-          :class="status === 'connected' ? 'bg-emerald-400' : status === 'connecting' ? 'bg-amber-400' : 'bg-rose-400'"
+          :class="status === 'connected' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(48,209,88,0.6)] dark:bg-emerald-400' : status === 'connecting' ? 'bg-amber-500 dark:bg-amber-400' : 'bg-rose-500 dark:bg-rose-400'"
         />
-        <span class="text-slate-400">{{ statusLabel() }}</span>
+        <span class="text-slate-500 dark:text-slate-400">{{ statusLabel() }}</span>
       </div>
     </div>
 
     <div class="mb-4 flex items-center gap-3">
-      <label class="text-sm text-slate-400" for="console-agent">Agent</label>
+      <label class="text-sm text-slate-500 dark:text-slate-400" for="console-agent">Agent</label>
       <select
         id="console-agent"
         v-model="selectedAgentId"
-        class="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white"
+        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
       >
         <option value="" disabled>
           {{ agents.length === 0 ? 'No agents — create one first' : 'Select an agent' }}
@@ -180,47 +180,49 @@ onBeforeUnmount(() => {
           {{ agent.name }}
         </option>
       </select>
-      <span v-if="agentsStore.loading" class="text-sm text-slate-500">Loading agents…</span>
+      <span v-if="agentsStore.loading" class="text-sm text-slate-500 dark:text-slate-400">Loading agents…</span>
     </div>
 
-    <div ref="scrollContainer" class="min-h-0 flex-1 overflow-auto rounded-lg border border-slate-800 bg-slate-900 p-4">
-      <div v-if="messages.length === 0 && !pending" class="text-sm text-slate-500">
+    <div ref="scrollContainer" class="min-h-0 flex-1 overflow-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div v-if="messages.length === 0 && !pending" class="text-sm text-slate-500 dark:text-slate-400">
         <span v-if="agents.length === 0 && !agentsStore.loading">No agents — create one first.</span>
         <span v-else>Waiting for messages… Select an agent and say hello.</span>
       </div>
       <div v-for="message in messages" :key="message.id" class="mb-4">
-        <div class="mb-1 text-xs text-slate-500">
+        <div class="mb-1 text-xs text-slate-500 dark:text-slate-400">
           {{ message.role }} · {{ new Date(message.time).toLocaleTimeString() }}
         </div>
         <div
-          class="rounded border p-3 text-sm"
-          :class="message.role === 'user' ? 'border-sky-800 bg-sky-950/40' : 'border-slate-800 bg-slate-950'"
+          class="rounded-xl border p-3 text-sm"
+          :class="message.role === 'user' ? 'border-sky-200 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/40' : 'border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950'"
         >
-          <div class="text-slate-200" v-html="rendered(message.content)" />
+          <div class="text-slate-800 dark:text-slate-200" v-html="rendered(message.content)" />
         </div>
       </div>
       <div v-if="pending" class="mb-4">
-        <div class="mb-1 text-xs text-slate-500">assistant · typing</div>
-        <div class="rounded border border-slate-800 bg-slate-950 p-3 text-sm">
-          <div class="italic text-slate-400">… typing …</div>
+        <div class="mb-1 text-xs text-slate-500 dark:text-slate-400">assistant · typing</div>
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-950">
+          <div class="italic text-slate-500 dark:text-slate-400">… typing …</div>
         </div>
       </div>
     </div>
 
-    <form class="mt-4 flex gap-2" @submit.prevent="send">
-      <input
-        v-model="draft"
-        :disabled="!canSend"
-        :placeholder="inputPlaceholder"
-        class="flex-1 rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white disabled:opacity-50"
-      />
-      <button
-        type="submit"
-        :disabled="!canSend"
-        class="rounded bg-sky-600 px-4 py-2 text-sm text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Send
-      </button>
+    <form class="mt-4" @submit.prevent="send">
+      <div class="squircle panel flex gap-2 p-2">
+        <input
+          v-model="draft"
+          :disabled="!canSend"
+          :placeholder="inputPlaceholder"
+          class="flex-1 rounded-2xl bg-transparent px-3 py-2 text-sm text-slate-900 outline-none disabled:opacity-50 dark:text-white"
+        />
+        <button
+          type="submit"
+          :disabled="!canSend"
+          class="rounded-2xl bg-royal px-4 py-2 text-sm text-white transition-colors duration-300 hover:bg-royal-hover disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Send
+        </button>
+      </div>
     </form>
   </div>
 </template>

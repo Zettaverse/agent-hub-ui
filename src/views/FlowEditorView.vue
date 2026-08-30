@@ -24,6 +24,7 @@ import {
   type Flow,
 } from '@/lib/flow'
 import { useFlowsStore } from '@/stores/flows'
+import { nodeColor } from '@/lib/palette'
 
 const route = useRoute()
 const router = useRouter()
@@ -54,6 +55,11 @@ const validationErrors = ref<string[]>([])
 const saving = ref(false)
 const running = ref(false)
 const statusMessage = ref<string | null>(null)
+
+// Tactile drag state (visual only — does not affect flow_json serialization).
+const draggingType = ref<string | null>(null)
+const isDraggingOver = ref(false)
+let dragDepth = 0
 
 const selectedNode = computed<GraphNode | null>(() => {
   if (!flowInstance.value || !selectedNodeId.value) return null
@@ -116,6 +122,32 @@ function onDragOver(event: DragEvent): void {
   event.preventDefault()
   if (event.dataTransfer) {
     event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+// Visual-only drag state. Wraps the existing onDragStart (which stays
+// byte-identical) so the palette item can scale up while being dragged.
+function onPaletteDragStart(event: DragEvent, type: string): void {
+  draggingType.value = type
+  onDragStart(event, type)
+}
+
+function onDragEnd(): void {
+  draggingType.value = null
+  dragDepth = 0
+  isDraggingOver.value = false
+}
+
+function onDragEnter(event: DragEvent): void {
+  event.preventDefault()
+  dragDepth += 1
+  isDraggingOver.value = true
+}
+
+function onDragLeave(): void {
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) {
+    isDraggingOver.value = false
   }
 }
 
@@ -204,29 +236,29 @@ function backToFlows(): void {
 
 <template>
   <div class="flex h-screen flex-col">
-    <header class="flex items-center gap-3 border-b border-slate-800 bg-slate-900 px-4 py-3">
-      <button class="text-sm text-slate-400 hover:text-white" @click="backToFlows">← Flows</button>
+    <header class="flex items-center gap-3 border-b border-black/[0.05] bg-white/70 px-4 py-3 backdrop-blur-[20px] backdrop-saturate-150 dark:border-white/[0.06] dark:bg-slate-900/70">
+      <button class="text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" @click="backToFlows">← Flows</button>
       <input
         v-model="flowName"
-        class="rounded border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white"
+        class="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
       />
       <div class="ml-auto flex items-center gap-3">
         <span
           v-if="statusMessage"
           class="text-sm"
-          :class="validationErrors.length > 0 ? 'text-rose-400' : 'text-emerald-300'"
+          :class="validationErrors.length > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-300'"
         >
           {{ statusMessage }}
         </span>
         <button
-          class="rounded border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+          class="rounded-xl border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition-colors duration-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           :disabled="saving || running"
           @click="onSave"
         >
           {{ saving ? 'Saving…' : 'Save' }}
         </button>
         <button
-          class="rounded bg-sky-600 px-3 py-1.5 text-sm text-white hover:bg-sky-500"
+          class="rounded-xl bg-royal px-3 py-1.5 text-sm text-white transition-colors duration-300 hover:bg-royal-hover disabled:cursor-not-allowed disabled:opacity-50"
           :disabled="saving || running"
           @click="onRun"
         >
@@ -237,29 +269,37 @@ function backToFlows(): void {
 
     <div
       v-if="validationErrors.length > 0"
-      class="border-b border-rose-800 bg-rose-950/40 px-4 py-2 text-sm text-rose-300"
+      class="border-b border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-600 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300"
     >
       <div v-for="error in validationErrors" :key="error">{{ error }}</div>
     </div>
 
     <div class="flex min-h-0 flex-1">
-      <aside class="w-48 shrink-0 overflow-auto border-r border-slate-800 bg-slate-900 p-3">
-        <h2 class="mb-3 text-sm font-semibold text-slate-300">Node Palette</h2>
+      <aside class="w-48 shrink-0 overflow-auto border-r border-black/[0.05] bg-white/70 p-3 backdrop-blur-[20px] dark:border-white/[0.06] dark:bg-slate-900/70">
+        <h2 class="mb-3 text-sm font-semibold text-slate-500 dark:text-slate-300">Node Palette</h2>
         <div class="flex flex-col gap-2">
           <div
             v-for="type in NODE_TYPES"
             :key="type"
-            class="cursor-grab rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 hover:border-sky-500"
+            class="flex cursor-grab items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition-all duration-300 hover:border-sky-500 hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            :class="{ 'scale-105 shadow-lg': draggingType === type }"
             draggable="true"
-            @dragstart="onDragStart($event, type)"
+            @dragstart="onPaletteDragStart($event, type)"
+            @dragend="onDragEnd"
           >
+            <span class="h-2 w-2 shrink-0 rounded-full" :style="{ backgroundColor: nodeColor(type) }" />
             {{ NODE_LABELS[type] }}
           </div>
         </div>
-        <p class="mt-4 text-xs text-slate-500">Drag a node onto the canvas.</p>
+        <p class="mt-4 text-xs text-slate-500 dark:text-slate-400">Drag a node onto the canvas.</p>
       </aside>
 
-      <main class="min-w-0 flex-1">
+      <main
+        class="flow-canvas min-w-0 flex-1 bg-[#F5F5F7] dark:bg-slate-950"
+        :class="{ 'is-dragging': isDraggingOver }"
+        @dragenter="onDragEnter"
+        @dragleave="onDragLeave"
+      >
         <VueFlow
           class="h-full w-full"
           :node-types="nodeTypes"
@@ -275,7 +315,7 @@ function backToFlows(): void {
         </VueFlow>
       </main>
 
-      <aside class="w-72 shrink-0 overflow-auto border-l border-slate-800 bg-slate-900">
+      <aside class="w-72 shrink-0 overflow-auto border-l border-black/[0.05] bg-white/70 backdrop-blur-[20px] dark:border-white/[0.06] dark:bg-slate-900/70">
         <NodePanel :node="selectedNode" @update-data="onUpdateData" @delete-node="onDeleteNode" />
       </aside>
     </div>
